@@ -1,7 +1,7 @@
 #USAGE: ./tag_for_release.sh <pe_version>
 
 PE_VERSION=$1
-set +x
+set -x
 rm -rf ./${GITHUB_PROJECT}
 git clone git@github.com:puppetlabs/${GITHUB_PROJECT} ./${GITHUB_PROJECT}
 cd ${GITHUB_PROJECT}
