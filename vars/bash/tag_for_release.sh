@@ -1,7 +1,6 @@
 #USAGE: ./tag_for_release.sh <pe_version>
 
 PE_VERSION=$1
-set -x
 rm -rf ./${GITHUB_PROJECT}
 git clone git@github.com:puppetlabs/${GITHUB_PROJECT} ./${GITHUB_PROJECT}
 cd ${GITHUB_PROJECT}
@@ -47,7 +46,7 @@ if [ $RELEASE_X_NUMBER != $TAG_X_NUMBER ]; then
     if [ "$RELEASE_X_NUMBER" -lt "$TAG_X_NUMBER" ]; then
         echo "$PE_VERSION is less then current tag $CURRENT_TAG"
         cd ..
-	rm -rf $repo
+	rm -rf ${GITHUB_PROJECT}
         exit 1
     fi
     TAG=$PE_VERSION.0
@@ -57,7 +56,7 @@ else
         if [ "$RELEASE_Y_NUMBER" -lt "$TAG_Y_NUMBER" ]; then
             echo "$PE_VERSION is less then current tag $CURRENT_TAG"
             cd ..
-	    rm -rf $repo
+	    rm -rf ${GITHUB_PROJECT}
             exit 1
         fi
         TAG=$PE_VERSION.0
@@ -67,7 +66,7 @@ else
             if [ "$RELEASE_Z_NUMBER" -lt "$TAG_Z_NUMBER" ]; then
                 echo "$PE_VERSION is less then current tag $CURRENT_TAG"
                 cd ..
-		rm -rf $repo
+		rm -rf ${GITHUB_PROJECT}
                 exit 1
             fi
                 TAG=$PE_VERSION.0
@@ -79,6 +78,6 @@ else
                         fi
     fi
 fi
-git push git@github.com:puppetlabs/$repo.git $TAG
+git push git@github.com:puppetlabs/${GITHUB_PROJECT}.git $TAG
 cd ..
-rm -rf $repo
+rm -rf ${GITHUB_PROJECT}
