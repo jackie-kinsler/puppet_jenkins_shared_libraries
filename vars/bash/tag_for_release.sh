@@ -79,7 +79,6 @@ else
                         fi
     fi
 fi
-#git push git@github.com:puppetlabs/$repo.git $TAG
-echo tag $TAG
-#cd ..
-#rm -rf $repo
+git push git@github.com:puppetlabs/$repo.git $TAG
+cd ..
+rm -rf $repo
