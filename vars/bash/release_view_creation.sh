@@ -4,7 +4,7 @@ REPO='ci-job-configs'
 FAMILY=`echo $PE_VERSION | sed "s/\(.*\..*\)\..*/\1/"`
 X_FAMILY=`echo $FAMILY | sed "s/\(.*\)\..*/\1/"`
 Y_FAMILY=`echo $FAMILY | sed "s/.*\.\(.*\)/\1/"`
-JOB_NAME='integration_release_job_creation'
+JOB_NAME='release_view_creation'
 YAML_FILEPATH=./jenkii/enterprise/projects/pe-integration.yaml
 TEMP_BRANCH="auto/${JOB_NAME}/${PE_VERSION}-release"
 
