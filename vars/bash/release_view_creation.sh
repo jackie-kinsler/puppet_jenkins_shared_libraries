@@ -25,7 +25,7 @@ fi
 
 echo "
 - view:
-    name: '${PE_VERSION}-release'
+    name: 'pe-integration/${PE_VERSION}-release'
     view-type: 'list'
     regex: 'enterprise_pe-acceptance-tests_integration-system_(pe|skip_workspace|opsworks).*nightly.*${PE_VERSION}-release'
     job-filters:
