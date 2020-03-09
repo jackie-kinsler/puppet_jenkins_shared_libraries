@@ -29,10 +29,10 @@ echo "
     view-type: 'list'
     regex: 'enterprise_pe-acceptance-tests_integration-system_(pe|skip_workspace|opsworks).*nightly.*${PE_VERSION}-release'
     job-filters:
-        - regex-job:
+        regex-job:
             regex: 'enterprise_(pe-acceptance-tests_(?:integration-system_pe_smoke|integration-system_pe_split-smoke|integration-system_pe.*(?:nightly|non-standard)|packaging_promotion|workspace-creation).*)${PE_VERSION}-release|(?!.*init-cinext.*)'
             match-type: 'includeMatched'
-        - job-status:
+        job-status:
             disabled: true
             match-type: 'excludeMatched'
     columns:
