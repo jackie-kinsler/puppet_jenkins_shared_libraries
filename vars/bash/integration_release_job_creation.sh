@@ -27,33 +27,33 @@ fi
 # Renames the usual p_scm_alt_code_name, which is used by pe-backup-tools, in order to avoid duplicate job declerations
 `sed -i "s/p_scm_alt_code_name: '${CODENAME}'/p_scm_alt_code_name: '${CODENAME}_replacement'/" $YAML_FILEPATH`
 
-echo "
-        - '{value_stream}_{name}_workspace-creation_{qualifier}':
-            scm_branch: ${PE_VERSION}-release
-            qualifier: '{scm_branch}'
-
-        - 'pe-integration-smoke-upgrade-release':
-            pe_family: ${FAMILY}
-            scm_branch: ${PE_VERSION}-release
-            cinext_preserve_resources: 'true'
-            beaker_helper: 'lib/beaker_helper.rb'
-            beaker_tag: 'risk:high,risk:medium'
-            upgrader_smoke_platform_axis_flatten_split:
-              - centos6-64mcd-64agent%2Cpe_postgres.
-            <<: *p_${FAMILY_SETTING}_supported_upgrade_defaults
-
-        - 'pe-integration-non-standard-agents-release':
-            pe_family: ${FAMILY}
-            scm_branch: ${PE_VERSION}-release
-            pipeline_scm_branch: ${PE_VERSION}-release
-            <<: *p_${FAMILY_SETTING}_non_standard_settings
-
-        - 'pe-integration-full-release':
-            pe_family: ${FAMILY}
-            scm_branch: ${PE_VERSION}-release
-            p_scm_alt_code_name: '${CODENAME}'
-            <<: *p_${FAMILY_SETTING}_settings
-            p_proxy_genconfig_extra: '--pe_dir=https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/${FAMILY}/release/ci-ready/'" >> $YAML_FILEPATH
+sed -i "/${FAMILY_SETTING} integration release anchor point/a \
+\        - '{value_stream}_{name}_workspace-creation_{qualifier}':\n\
+\            scm_branch: ${PE_VERSION}-release\n\
+\            qualifier: '{scm_branch}'\n\
+\n\
+\        - 'pe-integration-smoke-upgrade-release':\n\
+\            pe_family: ${FAMILY}\n\
+\            scm_branch: ${PE_VERSION}-release\n\
+\            cinext_preserve_resources: 'true'\n\
+\            beaker_helper: 'lib/beaker_helper.rb'\n\
+\            beaker_tag: 'risk:high,risk:medium'\n\
+\            upgrader_smoke_platform_axis_flatten_split:\n\
+\              - centos6-64mcd-64agent%2Cpe_postgres.\n\
+\            <<: *p_${FAMILY_SETTING}_supported_upgrade_defaults\n\
+\n\
+\        - 'pe-integration-non-standard-agents-release':\n\
+\            pe_family: ${FAMILY}\n\
+\            scm_branch: ${PE_VERSION}-release\n\
+\            pipeline_scm_branch: ${PE_VERSION}-release\n\
+\            <<: *p_${FAMILY_SETTING}_non_standard_settings\n\
+\n\
+\        - 'pe-integration-full-release':\n\
+\            pe_family: ${FAMILY}\n\
+\            scm_branch: ${PE_VERSION}-release\n\
+\            p_scm_alt_code_name: '${CODENAME}'\n\
+\            <<: *p_${FAMILY_SETTING}_settings\n\
+\            p_proxy_genconfig_extra: '--pe_dir=https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/${FAMILY}/release/ci-ready/'" $YAML_FILEPATH
 
 
 ## create a PR and push it
