@@ -31,7 +31,7 @@ def call(Map config, body) {
         }
     }
     container('kaniko') {
-        sh "/kaniko/executor --dockerfile ${config.dockerfile} --context ${config.context} --cache=true --destination=${config.destination}"
+        sh "/kaniko/executor --dockerfile ${config.dockerfile} --context ${config.context} --cache=true --destination ${config.destination}"
         body()
     }
 }
