@@ -73,8 +73,6 @@ integration_release_job_creation() {
 \            cinext_preserve_resources: 'true'\n\
 \            beaker_helper: 'lib/beaker_helper.rb'\n\
 \            beaker_tag: 'risk:high,risk:medium'\n\
-\            upgrader_smoke_platform_axis_flatten_split:\n\
-\              - centos6-64mcd-64agent%2Cpe_postgres.\n\
 \            <<: *p_${family_setting}_supported_upgrade_defaults\n\
 \n\
 \        - 'pe-integration-non-standard-agents-release':\n\
