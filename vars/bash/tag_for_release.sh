@@ -42,6 +42,15 @@ else
     TAG_FOURTH_DIGIT=`echo $CURRENT_TAG | sed 's/[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\.\([[:digit:]]\+\)-\?.*/\1/'`
 fi
 
+# Check if HEAD is already tagged
+last_tag=`git describe --tags $(git rev-list --tags --max-count=1)`
+last_tag_sha=`git rev-list -n 1 ${last_tag}`
+head_sha=`git rev-list -n 1 HEAD`
+if [ "${head_sha}" == "${last_tag_sha}" ]; then
+  echo "HEAD already tagged with ${last_tag}. Exiting."
+  exit 1
+fi
+
 if [ $RELEASE_X_NUMBER != $TAG_X_NUMBER ]; then
     if [ "$RELEASE_X_NUMBER" -lt "$TAG_X_NUMBER" ]; then
         echo "$PE_VERSION is less then current tag $CURRENT_TAG"
