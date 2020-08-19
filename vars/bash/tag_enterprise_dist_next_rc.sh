@@ -1,6 +1,10 @@
-#!/usr/bin/env bash --login -e
-
+#!/bin/bash
 #USAGE: ./tag_enterprise_dist_next_rc.sh <version> <branch_from>
+
+export BUNDLE_BIN=.bundle/bin
+export BUNDLE_PATH=.bundle/gems
+export PATH=/opt/puppetlabs/puppet/bin:$PATH
+
 set +x
 source /usr/local/rvm/scripts/rvm
 rvm use 2.5.1
@@ -12,22 +16,34 @@ next_pe_version=${3:-not_specified}
 
 # make sure our params are set to something reasonable
 if [[ $version == invalid ]]; then
-  echo "Error...looks like param VERSION was set incorrectly, it must be set to a PE version in x.y.z format"
+  : === Error: looks like param VERSION was set incorrectly, it must be set to a PE version in x.y.z format
   exit 1
 fi
 
 if [[ $branch_from == invalid ]]; then
-  echo "Error...looks like param BRANCH_FROM was set incorrectly, it must be set to a valid enterprise-dist branch"
+  : === Error: looks like param BRANCH_FROM was set incorrectly, it must be set to a valid enterprise-dist branch
   exit 1
 fi
 
 if [[ $next_pe_version == not_specified ]]; then
-  echo "No value set for NEXT_PE_VERSION...guessing"
+  : === Info: No value set for NEXT_PE_VERSION... calculating based on x.y value
 fi
 
-export BUNDLE_BIN=.bundle/bin
-export BUNDLE_PATH=.bundle/gems
-export PATH=/opt/puppetlabs/puppet/bin:$PATH
+# Calculate tagging actions based on user input
+if [[ ! -z $next_pe_version ]] ; then
+  : === You specified the version $next_pe_version to tag $branch_from at...
+  tagging_task=new_release:create_and_push_new_pe_tag
+  export PE_BRANCH_NAME=$branch_from
+  export NEXT_PE_VERSION=$next_pe_version
+elif [[ $branch_from == master ]] ; then
+  : === Next PE version not specified, incrementing Y value and pushing new tag
+  tagging_task=new_release:create_and_push_new_y_tag
+  export PE_BRANCH_NAME=$branch_from
+else
+  : === Next PE version not specified, incrementing Z value and pushing new tag
+  tagging_task=new_release:create_and_push_new_z_tag
+  export PE_BRANCH_NAME=$branch_from
+fi
 
 rm -rf ./$GITHUB_PROJECT
 git clone git@github.com:puppetlabs/$GITHUB_PROJECT ./$GITHUB_PROJECT
@@ -48,20 +64,9 @@ bundle exec rake ship:prepare_release_repos ARTIFACTORY_USERNAME=jenkins ARTIFAC
 
 : === Checking out mainline branch $branch_from
 git checkout $branch_from
+
 : === Pushing empty commit to $branch_from
 bundle exec rake new_release:push_empty_commit PE_BRANCH_NAME=$branch_from
 
-# If the user specifies what tag to use, use that tag
-# Otherwise if branch_from is master we tag next release with next Y (2019.4.0 -> 2019.5.0-rc0)
-# Finally, if we're branching from an LTS branch tag next Z (2018.1.11 -> 2018.1.12-rc0)
 : === Tagging next rc tag on $branch_from
-if [[ ! -z "$next_pe_version" ]] ; then
-    : === You specified the version $next_pe_version to tag $branch_from at...tagging now...
-    bundle exec rake new_release:create_and_push_new_pe_tag PE_BRANCH_NAME=$branch_from NEXT_PE_VERSION=$next_pe_version
-elif [[ $branch_from == "master" ]] ; then
-    puts "Next PE version not specified, incrementing Y value and pushing new tag"
-    bundle exec rake new_release:create_and_push_new_y_tag PE_BRANCH_NAME=$branch_from
-else
-    puts "Next PE version not specified, incrementing Z value and pushing new tag"
-    bundle exec rake new_release:create_and_push_new_z_tag PE_BRANCH_NAME=$branch_from
-fi
+bundle exec rake $tagging_task
