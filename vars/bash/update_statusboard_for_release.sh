@@ -23,5 +23,5 @@ sed -i "2i '$VIEW_URL-$PE_VERSION-release'," $SETTINGS_FILEPATH
 git add $SETTINGS_FILEPATH
 git commit -m "${JOB_NAME} for ${PE_VERSION}-release"
 git push origin $TEMP_BRANCH
-PULL_REQUEST="$(git show -s --pretty='format:%s%n%n%b' | hub pull-request -b master -F -)"
+PULL_REQUEST="$(git show -s --pretty='format:%s%n%n%b' | hub pull-request -b main -F -)"
 echo "Opened PR for $(pwd): ${PULL_REQUEST}"
