@@ -1,11 +1,11 @@
 #!/bin/sh
-readonly PE_VERSION=$1
-readonly CODENAME=$2
-readonly KICKOFF_HOUR=$3
-readonly FAMILY=`echo $PE_VERSION | sed "s/\(.*\..*\)\..*/\1/"`
-readonly X_FAMILY=`echo $FAMILY | sed "s/\(.*\)\..*/\1/"`
-readonly Y_FAMILY=`echo $FAMILY | sed "s/.*\.\(.*\)/\1/"`
-readonly PE_FAMILY="${X_FAMILY}_${Y_FAMILY}"
+readonly PE_VERSION=$1 # Release version, e.g. 2019.8.4
+readonly MAINLINE_BRANCH=$2 # The mainline pe_acceptance_tests branch (special cased to 'irving' where needed, but otherwise p_a_t branch matches component repo branches)
+readonly KICKOFF_HOUR=$3 # Hour (in 24-hour notation) to kick off CI for release branch
+readonly FAMILY=`echo $PE_VERSION | sed "s/\(.*\..*\)\..*/\1/"` # e.g. 2019.8
+readonly X_FAMILY=`echo $FAMILY | sed "s/\(.*\)\..*/\1/"` # e.g. 2019
+readonly Y_FAMILY=`echo $FAMILY | sed "s/.*\.\(.*\)/\1/"` # e.g. 8
+readonly X_Y="${X_FAMILY}_${Y_FAMILY}" # e.g. 2019_8, used for settings variable names
 
 readonly REPO='ci-job-configs'
 readonly JOB_NAME='installer_team_release_creation_job'
@@ -13,15 +13,18 @@ readonly TEMP_BRANCH="auto/${JOB_NAME}/${PE_VERSION}-release"
 
 ##Modify init.yaml file for updating PE compose job
 init_release_job_creation() {
+  local yaml_filepath=./resources/job-templates/init.yaml
+
   echo 'Updating init.yaml...'
   sed -i "/init release anchor point/a \
-\        # ---- ${PE_VERSION}-release ----
+\        # ---- ${PE_VERSION}-release ----\n\
 \        - pm_conditional-step:\n\
 \            m_scm_branch: '${PE_VERSION}-release'\n\
 \            m_name: '{name}'\n\
 \            m_value_stream: '{value_stream}'\n\
-\            m_projects: '{value_stream}_pe-acceptance-tests_packaging_promotion_${PE_VERSION}-release,{value_stream}_{name}_init-cinext_smoke-upgrade_${PE_VERSION}-release,{value_stream}_{name}_init-cinext_split-smoke-upgrade_${PE_VERSION}-release,{value_stream}_jar-jar_component-update_${PE_VERSION}-release'" resources/job-templates/init.yaml
-  git add ./resources/job-templates/init.yaml
+\            m_projects: '{value_stream}_pe-acceptance-tests_packaging_promotion_${PE_VERSION}-release,{value_stream}_{name}_init-cinext_smoke-upgrade_${PE_VERSION}-release,{value_stream}_{name}_init-cinext_split-smoke-upgrade_${PE_VERSION}-release,{value_stream}_jar-jar_component-update_${PE_VERSION}-release'" $yaml_filepath
+  
+  git add $yaml_filepath
 }
 
 ##Modify jar-jar.yaml file for updating PE compose job
@@ -51,19 +54,24 @@ jar_jar_release_job_creation() {
 ##Create integration pe_acceptance_tests release pipeline
 integration_release_job_creation() {
   local yaml_filepath=./jenkii/enterprise/projects/pe-integration.yaml
-  local settings_default="p_${PE_FAMILY}_settings"
+  local settings_default="p_${X_Y}_settings"
   local settings_default_exists=$(grep ${settings_default} $yaml_filepath)
-  local family_setting=$PE_FAMILY
+  local family_setting=$X_Y
+  # If it isn't something like 2019_8, then it should be 'main'
   if [ -z "$settings_default_exists" ]; then
-      family_setting="${CODENAME}"
+      family_setting=$MAINLINE_BRANCH
+  fi
+  local p_scm_alt_code_name=$MAINLINE_BRANCH
+  if [[ "${MAINLINE_BRANCH}" = "2018.1.x" ]]; then
+      p_scm_alt_code_name='irving'
   fi
 
   echo 'Updating pe-integration.yaml...'
   # Renames the usual p_scm_alt_code_name, which is used by pe-backup-tools, in order to avoid duplicate job declarations
-  (sed -i "s/p_scm_alt_code_name: '${CODENAME}'/p_scm_alt_code_name: '${CODENAME}_replacement'/" $yaml_filepath)
+  (sed -i "s/p_scm_alt_code_name: '${p_scm_alt_code_name}'/p_scm_alt_code_name: '${p_scm_alt_code_name}_replacement'/" $yaml_filepath)
 
   sed -i "/${family_setting} integration release anchor point/a \
-\        # ---- ${PE_VERSION}-release ----
+\        # ---- ${PE_VERSION}-release ----\n\
 \        - '{value_stream}_{name}_workspace-creation_{qualifier}':\n\
 \            scm_branch: ${PE_VERSION}-release\n\
 \            qualifier: '{scm_branch}'\n\
@@ -90,10 +98,18 @@ integration_release_job_creation() {
 \            timed_trigger_cron: '00 ${KICKOFF_HOUR} * * *'\n\
 \            pe_family: ${FAMILY}\n\
 \            scm_branch: ${PE_VERSION}-release\n\
-\            p_scm_alt_code_name: '${CODENAME}'\n\
+\            p_scm_alt_code_name: '${p_scm_alt_code_name}'\n\
 \            <<: *p_${family_setting}_settings\n\
 \            <<: *p_upgrade_axes_${family_setting}\n\
 \            p_proxy_genconfig_extra: '--pe_dir=https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/${FAMILY}/release/ci-ready/'" $yaml_filepath
+
+  # We probably won't want to disable the 'main' CI pipeline since people will still be landing changes there,
+  # but we'll want to disable the LTS mainline pipelines. However, 'main' anchor points are there in case
+  # we decide differently later.
+  if [[ "${MAINLINE_BRANCH}" != "main" ]]; then
+    sed -i "/${family_setting} pe-integration-non-standard-agents disable anchor/{n;s/False/True/}" $yaml_filepath
+    sed -i "/${family_setting} pe-integration-full disable anchor/{n;s/False/True/}" $yaml_filepath
+  fi
 
   git add $yaml_filepath
 }
@@ -101,11 +117,11 @@ integration_release_job_creation() {
 ##Create pe-installer-vanagon release pipeline
 installer_vanagon_release_job_creation() {
   local yaml_filepath=./jenkii/enterprise/projects/pe-installer-vanagon.yaml
-  local settings_default="p_${PE_FAMILY}_installer_vanagon_settings"
+  local settings_default="p_${X_Y}_installer_vanagon_settings"
   local settings_default_exists=$(grep ${settings_default} jenkii/enterprise/projects/pe-installer-vanagon.yaml)
-  local family_setting=$PE_FAMILY
+  local family_setting=$X_Y
   if [ -z "$settings_default_exists" ]; then
-      family_setting="${CODENAME}"
+      family_setting=$MAINLINE_BRANCH
   fi
 
   echo 'Updating pe-installer-vanagon.yaml...'
@@ -123,11 +139,11 @@ installer_vanagon_release_job_creation() {
 ##Create pe-modules-vanagon release pipeline
 modules_vanagon_release_job_creation() {
   local yaml_filepath=./jenkii/enterprise/projects/pe-modules-vanagon.yaml
-  local settings_default="p_${PE_FAMILY}_pe_modules_vanagon"
+  local settings_default="p_${X_Y}_pe_modules_vanagon"
   local settings_default_exists=$(grep ${settings_default} $yaml_filepath)
-  local family_setting=$PE_FAMILY
+  local family_setting=$X_Y
   if [ -z "$settings_default_exists" ]; then
-    family_setting="${CODENAME}"
+    family_setting=$MAINLINE_BRANCH
   fi
 
   echo 'Updating pe-modules-vanagon.yaml...'
@@ -163,11 +179,6 @@ pe_installer_shim_job_creation() {
 ##Create monorepo promotion release pipeline
 pe_modules_release_job_creation() {
   local yaml_filepath=./jenkii/enterprise/projects/pe-modules.yaml
-  local family_setting=$CODENAME
-  # pe_family: main when branch is main, otherwise $FAMILY
-  if [[ $CODENAME =~ \.x ]]; then
-    family_setting=$FAMILY
-  fi
 
   echo 'Updating pe-modules.yaml...'
   echo "
@@ -201,7 +212,7 @@ pe_modules_release_job_creation() {
         - 'pe-integration-module-pr':
             cinext_enabled: 'false'
             scm_branch: '${PE_VERSION}-release'
-            pe_family: ${family_setting}
+            pe_family: ${FAMILY}
             p_split_topology: 'pe-postgres'
             upgrade_from: '2019.4.0'" >> $yaml_filepath
   fi
@@ -229,14 +240,11 @@ pe_installer_promote_release_job_creation() {
 
 pe_backup_tools_release_job_creation() {
   local yaml_filepath=./jenkii/enterprise/projects/pe-backup-tools.yaml
-  local settings_default="p_${PE_FAMILY}_pe_backup_tools_settings"
+  local settings_default="p_${X_Y}_pe_backup_tools_settings"
   local settings_default_exists=$(grep ${settings_default} $yaml_filepath)
-  local family_setting=$PE_FAMILY # e.g. 2019_8
-  local family_version=$FAMILY # e.g. 2019.8
-  # 'main'
+  local family_setting=$X_Y
   if [ -z "$settings_default_exists" ]; then
-    family_setting="${CODENAME}"
-    family_version="${CODENAME}"
+    family_setting=$MAINLINE_BRANCH
   fi
 
   echo 'Updating pe-backup-tools.yaml...'
@@ -246,29 +254,29 @@ pe_backup_tools_release_job_creation() {
 \            component_scm_branch: '${PE_VERSION}-release'\n\
 \            vanagon_scm_branch: '${PE_VERSION}-release'\n\
 \            promote_branch: '${PE_VERSION}-release'\n\
-\            p_optional_path: '${family_setting}/'\n\
+\            p_optional_path: '${FAMILY}\/'\n\
 \            env_command: |\n\
-\              source /usr/local/rvm/scripts/rvm\n\
+\              source \/usr\/local\/rvm\/scripts\/rvm\n\
 \              rvm use {rvm_ruby_version}\n\
-\              export pe_ver=\\\"\$(redis-cli -h redis.delivery.puppetlabs.net get ${family_version}_release_pe_version)\\\"\n\
-\              export PE_FAMILY=${family_version}\n\
-\              export BUNDLE_PATH=.bundle/gems BUNDLE_BIN=.bundle/bin SHA=\$SUITE_COMMIT CONFIG=config/nodes/\$TEST_TARGET.yaml\n\
-\              eval \"$(ssh-agent -t 24h -s)\"\n\
-\              ssh-add \"\${{HOME}}/.ssh/id_rsa\"\n\
-\              ssh-add \"\${{HOME}}/.ssh/id_rsa-acceptance\"\n\
+\              export pe_ver=\\\"\$(redis-cli -h redis.delivery.puppetlabs.net get ${FAMILY}_release_pe_version)\\\"\n\
+\              export PE_FAMILY=${FAMILY}\n\
+\              export BUNDLE_PATH=.bundle\/gems BUNDLE_BIN=.bundle\/bin SHA=\$SUITE_COMMIT CONFIG=config\/nodes\/\$TEST_TARGET.yaml\n\
+\              eval \"\$(ssh-agent -t 24h -s)\"\n\
+\              ssh-add \"\${{HOME}}\/.ssh\/id_rsa\"\n\
+\              ssh-add \"\${{HOME}}\/.ssh\/id_rsa-acceptance\"\n\
 \            <<: *p_${family_setting}_pe_backup_tools_settings\n\
 \        - 'pe-ruby-vanagon-pr':\n\
 \            component_scm_branch: '${PE_VERSION}-release'\n\
 \            vanagon_scm_branch: '${PE_VERSION}-release'\n\
 \            env_command: |\n\
-\              source /usr/local/rvm/scripts/rvm\n\
+\              source \/usr\/local\/rvm\/scripts\/rvm\n\
 \              rvm use {rvm_ruby_version}\n\
-\              export pe_ver=\"\$(redis-cli -h redis.delivery.puppetlabs.net get ${family_version}_release_pe_version)\"\n\
-\              export PE_FAMILY=${family_version}\n\
-\              export BUNDLE_PATH=.bundle/gems BUNDLE_BIN=.bundle/bin SHA=\$SUITE_COMMIT CONFIG=config/nodes/\$TEST_TARGET.yaml\n\
-\              eval \"$(ssh-agent -t 24h -s)\"\n\
-\              ssh-add \"\${{HOME}}/.ssh/id_rsa\"\n\
-\              ssh-add \"\${{HOME}}/.ssh/id_rsa-acceptance\"\n\
+\              export pe_ver=\"\$(redis-cli -h redis.delivery.puppetlabs.net get ${FAMILY}_release_pe_version)\"\n\
+\              export PE_FAMILY=${FAMILY}\n\
+\              export BUNDLE_PATH=.bundle\/gems BUNDLE_BIN=.bundle\/bin SHA=\$SUITE_COMMIT CONFIG=config\/nodes\/\$TEST_TARGET.yaml\n\
+\              eval \"\$(ssh-agent -t 24h -s)\"\n\
+\              ssh-add \"\${{HOME}}\/.ssh\/id_rsa\"\n\
+\              ssh-add \"\${{HOME}}\/.ssh\/id_rsa-acceptance\"\n\
 \            <<: *p_${family_setting}_pe_backup_tools_settings\n" $yaml_filepath
 
 
@@ -276,11 +284,11 @@ pe_backup_tools_release_job_creation() {
         # ---- ${PE_VERSION}-release ----
         - 'pe-etc-vanagon-suite-pipeline-daily':
             scm_branch: '${PE_VERSION}-release'
-            pe_family: '${family_version}' #needed for PEZ
+            pe_family: '${FAMILY}' #needed for PEZ
             promote_into: '${PE_VERSION}-release'
             p_pkg-int-sys-testing_env-command: |
-              export pe_dist_dir=https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/${family_version}/release/ci-ready
-              export PE_FAMILY=${family_version}
+              export pe_dist_dir=https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/${FAMILY}/release/ci-ready
+              export PE_FAMILY=${FAMILY}
               eval \"\$(ssh-agent -t 24h -s)\"
               ssh-add \$HOME/.ssh/id_rsa
               ssh-add \$HOME/.ssh/id_rsa-acceptance
