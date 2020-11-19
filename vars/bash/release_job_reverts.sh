@@ -9,7 +9,7 @@ git checkout -b $TEMP_BRANCH
 
 # Search through git logs for the release version
 # Then we only care about the commit SHA
-for i in $(git log --grep="for ${PE_VERSION}-release" --oneline --no-merges | sed "s/\([[:alpha:]]\?[[:digit:]]*\) .*/\1/")
+for i in $(git log --grep="Installer team pipelines for ${PE_VERSION}-release" --oneline --no-merges | sed "s/\([[:alpha:]]\?[[:digit:]]*\) .*/\1/")
 do
     git revert $i --no-edit
 done
