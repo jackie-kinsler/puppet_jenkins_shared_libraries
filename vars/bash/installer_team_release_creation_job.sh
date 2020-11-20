@@ -86,7 +86,9 @@ integration_release_job_creation() {
 \            <<: *p_upgrade_axes_${family_setting}\n\
 \n\
 \        - 'pe-integration-non-standard-agents-release':\n\
+\            # ${PE_VERSION}-release pe-integration-non-standard-agents disable anchor, do not delete this comment or move the next line\n\
 \            kickoff_disabled: False\n\
+\            # ${PE_VERSION}-release pe-integration-non-standard-agents timed_trigger_cron anchor, do not delete this comment or move the next line\n\
 \            timed_trigger_cron: '00 ${KICKOFF_HOUR} * * *'\n\
 \            pe_family: ${FAMILY}\n\
 \            scm_branch: ${PE_VERSION}-release\n\
@@ -94,7 +96,9 @@ integration_release_job_creation() {
 \            <<: *p_${family_setting}_non_standard_settings\n\
 \n\
 \        - 'pe-integration-full-release':\n\
+\            # ${PE_VERSION}-release pe-integration-full disable anchor, do not delete this comment or move the next line\n\
 \            kickoff_disabled: False\n\
+\            # ${PE_VERSION}-release pe-integration-full timed_trigger_cron anchor, do not delete this comment or move the next line\n\
 \            timed_trigger_cron: '00 ${KICKOFF_HOUR} * * *'\n\
 \            pe_family: ${FAMILY}\n\
 \            scm_branch: ${PE_VERSION}-release\n\
@@ -107,8 +111,8 @@ integration_release_job_creation() {
   # but we'll want to disable the LTS mainline pipelines. However, 'main' anchor points are there in case
   # we decide differently later.
   if [[ "${MAINLINE_BRANCH}" != "main" ]]; then
-    sed -i "/${family_setting} pe-integration-non-standard-agents disable anchor/{n;s/False/True/}" $yaml_filepath
-    sed -i "/${family_setting} pe-integration-full disable anchor/{n;s/False/True/}" $yaml_filepath
+    sed -i "/${MAINLINE_BRANCH} pe-integration-non-standard-agents disable anchor/{n;s/False/True/}" $yaml_filepath
+    sed -i "/${MAINLINE_BRANCH} pe-integration-full disable anchor/{n;s/False/True/}" $yaml_filepath
   fi
 
   git add $yaml_filepath
