@@ -67,7 +67,7 @@ if [[ "${uncommitted}" == "0" ]]; then
 fi
 git commit -m "${commit_message}"
 echo "Pushing ${TEMP_BRANCH}..."
-git push origin "${TEMP_BRANCH}"
+git push -f origin "${TEMP_BRANCH}"
 echo "Creating PR..."
 PULL_REQUEST="$(git show -s --pretty='%s' | hub pull-request -b master -h ${TEMP_BRANCH} -F -)"
 PR_NUM="$(hub pr list -h ${TEMP_BRANCH} -f '%I')"
