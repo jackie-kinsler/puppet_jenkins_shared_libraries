@@ -79,16 +79,27 @@ if [[ "${CI_STATUS}" -eq "0" ]]; then
   echo "PR CI status is green. Merging PR. You can probably ignore the error that shows up just after this message."
   hub api -XPUT "repos/puppetlabs/ci-job-configs/pulls/${PR_NUM}/merge"
   MERGE_STATUS=$?
-  # At the moment, hub thinks the merge failed (exit code 22) due to needing a review on the PR,
+  # At the moment, hub sometimes thinks the merge failed (exit code 22) due to needing a review on the PR,
   # but it actually merges it just fine, so we'll check that there are no open PRs after the merge.
   if [[ "${MERGE_STATUS}" -eq "0" ]] || [[ "${MERGE_STATUS}" -eq "22" ]] ; then
     pr="$(hub pr list -h ${TEMP_BRANCH} -f '%I')"
+    echo ""
     if [[ -z "${pr}" ]]; then
       echo "PR merge successful. Deleting ${TEMP_BRANCH}."
-      git push origin --delete "${TEMP_BRANCH}"
-      if [[ "${?}" -ne "0" ]]; then
-        echo "Failed to delete ${TEMP_BRANCH} from origin. Please delete manually."
-        exit 1
+      # There's a weird timing issue here, I think. But if the remote doesn't
+      # have the branch (maybe it gets auto-deleted on merge?), then don't try
+      # to delete it ourselves.
+      sleep 5
+      git fetch origin
+      git show-branch "origin/${TEMP_BRANCH}" 2>/dev/null
+      if [[ "${?}" -eq "0" ]]; then
+        git push origin --delete "${TEMP_BRANCH}"
+        if [[ "${?}" -ne "0" ]]; then
+          echo "Failed to delete ${TEMP_BRANCH} from origin. Please delete manually."
+          exit 0
+        fi
+      else
+        echo "Branch already deleted on origin."
       fi
     else
       echo "PR ${pr} still appears to be open."
