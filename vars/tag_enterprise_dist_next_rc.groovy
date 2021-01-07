@@ -15,7 +15,7 @@ def call(String version, String codename, String next_pe_version) {
   }
   //Execute bash script, catch and print output and errors
   node('worker') {
-    sh "curl -O https://raw.githubusercontent.com/puppetlabs/puppet_jenkins_shared_libraries/main/vars/bash/tag_enterprise_dist_next_rc.sh"
+    sh "curl -O https://raw.githubusercontent.com/puppetlabs/puppet_jenkins_shared_libraries/RE-13488/vars/bash/tag_enterprise_dist_next_rc.sh"
     sh "bash tag_enterprise_dist_next_rc.sh $version $codename $next_pe_version"
   }
 }

@@ -46,7 +46,7 @@ else
 fi
 
 rm -rf ./$GITHUB_PROJECT
-git clone git@github.com:puppetlabs/$GITHUB_PROJECT ./$GITHUB_PROJECT
+git clone git@github.com:jackie-kinsler/$GITHUB_PROJECT ./$GITHUB_PROJECT
 
 cd $GITHUB_PROJECT
 

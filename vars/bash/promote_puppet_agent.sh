@@ -16,6 +16,10 @@ export IPS_SIGNING_SSH_KEY=/home/jenkins/.ssh/id_signing
 export MSI_SIGNING_SSH_KEY=/home/jenkins/.ssh/id_signing
 export MSI_SIGNING_SERVER=windowssigning-aio1-prod.delivery.puppetlabs.net
 
+rm -rf ./${GITHUB_PROJECT}
+git clone git@github.com:jackie-kinsler/${GITHUB_PROJECT} ./${GITHUB_PROJECT}
+cd ${GITHUB_PROJECT}
+
 git checkout $version-release
 # set PE_version_XY from enterprise-dist git describe
 # This is getting the X.Y version from the tag

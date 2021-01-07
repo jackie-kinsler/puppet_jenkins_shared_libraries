@@ -15,7 +15,7 @@ def call(String version) {
   }
   //Execute bash script, catch and print output and errors
   node('worker') {
-    sh "curl -O https://raw.githubusercontent.com/puppetlabs/puppet_jenkins_shared_libraries/main/vars/bash/promote_puppet_agent.sh"
+    sh "curl -O https://raw.githubusercontent.com/puppetlabs/puppet_jenkins_shared_libraries/RE-13488/vars/bash/promote_puppet_agent.sh"
     sh "bash promote_puppet_agent.sh $version"
   }
 }
